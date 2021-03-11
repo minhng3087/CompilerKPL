@@ -9,6 +9,7 @@
 
 #define MAX_IDENT_LEN 15
 #define KEYWORDS_COUNT 20
+#define MAX_NUM_LEN 10
 
 typedef enum {
   TK_NONE, TK_IDENT, TK_NUMBER, TK_CHAR, TK_EOF,

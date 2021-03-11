@@ -6,7 +6,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
 #include "reader.h"
 #include "charcode.h"
 #include "token.h"
@@ -22,7 +21,6 @@ extern CharCode charCodes[];
 /***************************************************************/
 
 void skipBlank() {
-  // 
   while((currentChar != EOF) && (charCodes[currentChar] == CHAR_SPACE)) {
     readChar();
   }
@@ -71,6 +69,9 @@ Token* readNumber(void) {
     readChar();
   }
   token->string[count] = '\0';
+  if (count > MAX_NUM_LEN) {
+    error(ERR_NUMBERTOOBIG, lineNo, colNo);
+  }
   token->value = atoi(token->string);
   return token;
 }
@@ -226,8 +227,6 @@ Token* getToken(void) {
 /******************************************************************/
 
 void printToken(Token *token) {
-
-  printf("%d-%d:", token->lineNo, token->colNo);
 
   switch (token->tokenType) {
   case TK_NONE: printf("TK_NONE\n"); break;
