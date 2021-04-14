@@ -41,17 +41,13 @@ void skipComment() {
 Token* readIdentKeyword(void) {
   int count = 0;
   Token* token = makeToken(TK_IDENT, lineNo, colNo);
-  while(currentChar != EOF && (charCodes[currentChar] == CHAR_LETTER || charCodes[currentChar] == CHAR_DIGIT)) {
+  while(currentChar != EOF && (charCodes[currentChar] == CHAR_LETTER || charCodes[currentChar] == CHAR_DIGIT) ) {
       token->string[count] = currentChar;
       count++;
       readChar();
   }
-  token->string[count] = '\0';
-  if(count > MAX_IDENT_LEN) {
-    error(ERR_IDENTTOOLONG, lineNo, colNo);
-    token->tokenType = TK_NONE;
-    return token;
-  }
+  token->string[MAX_IDENT_LEN] = '\0';
+  
   token->tokenType = checkKeyword(token->string);
   if(token->tokenType == TK_NONE) {
     token->tokenType = TK_IDENT;
@@ -146,6 +142,10 @@ Token* getToken(void) {
       readChar();
       return makeToken(SB_LE, ln, cn);
     }
+    if(currentChar !=EOF && charCodes[currentChar] == CHAR_GT) {
+      readChar();
+      return makeToken(SB_NEQ, ln, cn);
+    }
     else return makeToken(SB_LT, ln, cn);
 
   case CHAR_GT:
@@ -232,6 +232,31 @@ Token* getToken(void) {
     readChar();
     return token;
 
+  case CHAR_LBRACKET:
+    token = makeToken(SB_LSEL, lineNo, colNo);
+    readChar();
+    return token;
+
+  case CHAR_RBRACKET:
+    token = makeToken(SB_RSEL, lineNo, colNo);
+    readChar();
+    return token;
+  
+  case CHAR_QUOTE:
+    token = makeToken(SB_QUOTE, lineNo, colNo);
+    readChar();
+    if(currentChar != EOF) {
+      if (charCodes[currentChar] == CHAR_LETTER) {
+        token = readIdentKeyword();
+        readChar();
+      }
+      if (charCodes[currentChar] == CHAR_DIGIT) { 
+        token = readNumber();
+        readChar();
+      }
+    }
+    return token;
+
   default:
     token = makeToken(TK_NONE, lineNo, colNo);
     error(ERR_INVALIDSYMBOL, lineNo, colNo);
@@ -272,6 +297,9 @@ void printToken(Token *token) {
   case KW_DO: printf("KW_DO\n"); break;
   case KW_FOR: printf("KW_FOR\n"); break;
   case KW_TO: printf("KW_TO\n"); break;
+  case KW_RETURN: printf("KW_RETURN\n"); break;
+  case KW_SWITCH: printf("KW_SWITCH\n"); break;
+
 
   case SB_SEMICOLON: printf("SB_SEMICOLON\n"); break;
   case SB_COLON: printf("SB_COLON\n"); break;
@@ -292,6 +320,7 @@ void printToken(Token *token) {
   case SB_RPAR: printf("SB_RPAR\n"); break;
   case SB_LSEL: printf("SB_LSEL\n"); break;
   case SB_RSEL: printf("SB_RSEL\n"); break;
+  case SB_QUOTE: printf("SB_QUOTE\n"); break;
   }
 }
 

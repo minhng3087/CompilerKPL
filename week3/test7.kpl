@@ -1,0 +1,7 @@
+Program TestA7; (* Test bieu thuc voi chi so mang *)
+VAR V: Array(.10.) OF Integer;
+    M: Array(.10.) OF Array(.20.) OF Integer;
+Begin 
+    V(.10.) := 20;
+    M(.10+10.)(.20+2.) := V(.10/2.);
+End.

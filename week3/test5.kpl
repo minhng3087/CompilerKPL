@@ -1,0 +1,5 @@
+Program Test3B; (*Thieu dong ngoac o vi tri toan tu < *)
+Var Min : Integer;
+Begin
+	While (a + 2 > 10 + Min) Do
+End.

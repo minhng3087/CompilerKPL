@@ -1,0 +1,5 @@
+Program TEST14B; (* Thieu toan hang trong bieu thuc *)
+Var N : Integer;
+Begin
+	N := -N + -5;
+End.

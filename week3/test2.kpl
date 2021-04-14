@@ -1,0 +1,12 @@
+Program TESTA2; (* Test khai bao phuc tap *)
+Const MAX = 100;
+      Min = -Max;
+Type Vector = Array(.10.) Of Integer;
+     Matrix = Array(.10.) Of ARRAY(.20.) Of Vector;
+VAR N : Interger;
+    V : Vector;
+    M : Matrix;
+
+Begin 
+
+End.

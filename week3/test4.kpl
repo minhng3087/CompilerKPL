@@ -1,0 +1,5 @@
+Program Test2B; (* Thieu tu khoa do*)
+Var Min : Integer;
+Begin
+ While a > 10 Min Do 
+End.
