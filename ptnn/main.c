@@ -69,6 +69,16 @@ int main() {
     obj = CreateConstantObject("c1");
     obj->constAttrs->value = makeCharConstant('a');
     declareObject(obj);
+
+    // KIEM TRA
+    obj = CreateConstantObject("MAX");
+    obj->constAttrs->value = makeIntConstant(100);
+    declareObject(obj);
+
+    obj = CreateVariableObject("Cube");
+    obj->varAttrs->type = makeArrayType(10,makeArrayType(10,makeIntType()));
+    declareObject(obj);
+    // 
     
     obj = CreateConstantObject("c3");
     obj->constAttrs->value = makeIntConstant(10);
