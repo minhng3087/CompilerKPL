@@ -89,13 +89,10 @@ void printObject(Object* obj, int indent) {
 void printObjectList(ObjectNode* objList, int indent) {
   ObjectNode *node = objList;
   while (node != NULL) {
-    if(node->object->kind != OBJ_VARIABLE) {
-
     printObject(node->object, indent);
     printf("\n");
-    }
     node = node->next;
-}
+  }
 }
 
 void printScope(Scope* scope, int indent) {

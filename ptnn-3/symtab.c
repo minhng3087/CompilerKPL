@@ -1,7 +1,7 @@
 /* 
  * @copyright (c) 2008, Hedspi, Hanoi University of Technology
  * @author Huu-Duc Nguyen
- * @version 1.1
+ * @version 1.0
  */
 
 #include <stdio.h>
@@ -311,20 +311,6 @@ void enterBlock(Scope* scope) {
 
 void exitBlock(void) {
   symtab->currentScope = symtab->currentScope->outer;
-}
-
-Object* lookupObject(char *name) {
-  // TODO
-  Scope* currentScope = symtab->currentScope;
-    Object* object = NULL;
-    while (currentScope != NULL) {
-      object = findObject(currentScope->objList, name);
-      if (object != NULL)
-          return object;
-      currentScope = currentScope->outer;
-    }
-
-    return NULL;
 }
 
 void declareObject(Object* obj) {

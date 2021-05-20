@@ -1,7 +1,7 @@
 /* 
  * @copyright (c) 2008, Hedspi, Hanoi University of Technology
  * @author Huu-Duc Nguyen
- * @version 1.1
+ * @version 1.0
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +9,7 @@
 #include "reader.h"
 #include "scanner.h"
 #include "parser.h"
+#include "semantics.h"
 #include "error.h"
 #include "debug.h"
 
@@ -28,96 +29,96 @@ void scan(void) {
 
 void eat(TokenType tokenType) {
   if (lookAhead->tokenType == tokenType) {
+    //    printToken(lookAhead);
     scan();
   } else missingToken(tokenType, lookAhead->lineNo, lookAhead->colNo);
 }
 
 void compileProgram(void) {
-  // create, enter, and exit program block
-  Object * obj = NULL;
+  Object* program;
+
   eat(KW_PROGRAM);
   eat(TK_IDENT);
-  obj = createProgramObject(currentToken->string);
+
+  program = createProgramObject(currentToken->string);
+  enterBlock(program->progAttrs->scope);
 
   eat(SB_SEMICOLON);
 
-  enterBlock(obj->progAttrs->scope);
   compileBlock();
-  exitBlock();
-
   eat(SB_PERIOD);
+
+  exitBlock();
+}
+
+void compileConstDecls(void) {
+  Object* constObj;
+  ConstantValue* constValue;
+
+  if (lookAhead->tokenType == KW_CONST) {
+    eat(KW_CONST);
+    do {
+      eat(TK_IDENT);
+      checkFreshIdent(currentToken->string);
+      constObj = createConstantObject(currentToken->string);
+      declareObject(constObj);
+      
+      eat(SB_EQ);
+      constValue = compileConstant();
+      constObj->constAttrs->value = constValue;
+      
+      eat(SB_SEMICOLON);
+    } while (lookAhead->tokenType == TK_IDENT);
+  }
+}
+
+void compileTypeDecls(void) {
+  Object* typeObj;
+  Type* actualType;
+
+  if (lookAhead->tokenType == KW_TYPE) {
+    eat(KW_TYPE);
+    do {
+      eat(TK_IDENT);
+      
+      checkFreshIdent(currentToken->string);
+      typeObj = createTypeObject(currentToken->string);
+      declareObject(typeObj);
+      
+      eat(SB_EQ);
+      actualType = compileType();
+      typeObj->typeAttrs->actualType = actualType;
+      
+      eat(SB_SEMICOLON);
+    } while (lookAhead->tokenType == TK_IDENT);
+  } 
+}
+
+void compileVarDecls(void) {
+  Object* varObj;
+  Type* varType;
+
+  if (lookAhead->tokenType == KW_VAR) {
+    eat(KW_VAR);
+    do {
+      eat(TK_IDENT);
+      checkFreshIdent(currentToken->string);
+      varObj = createVariableObject(currentToken->string);
+      eat(SB_COLON);
+      varType = compileType();
+      varObj->varAttrs->type = varType;
+      declareObject(varObj);      
+      eat(SB_SEMICOLON);
+    } while (lookAhead->tokenType == TK_IDENT);
+  } 
 }
 
 void compileBlock(void) {
-  // create and declare constant objects
-  Object * obj = NULL;
-  if (lookAhead->tokenType == KW_CONST) {
-    eat(KW_CONST);
-
-    do {
-      eat(TK_IDENT);
-      obj = createConstantObject(currentToken->string);
-
-      eat(SB_EQ);
-      obj->constAttrs->value = compileConstant();
-      eat(SB_SEMICOLON);
-      declareObject(obj);
-    } while (lookAhead->tokenType == TK_IDENT);
-
-    compileBlock2();
-  } 
-  else compileBlock2();
-}
-
-void compileBlock2(void) {
-  Object* obj = NULL;
-  if (lookAhead->tokenType == KW_TYPE) {
-    eat(KW_TYPE);
-
-    do {
-      eat(TK_IDENT);
-      obj = createTypeObject(currentToken->string);
-
-      eat(SB_EQ);
-      obj->typeAttrs->actualType = compileType();
-      eat(SB_SEMICOLON);
-
-      declareObject(obj);
-    } while (lookAhead->tokenType == TK_IDENT);
-
-    compileBlock3();
-  } 
-  else compileBlock3();
-}
-
-void compileBlock3(void) {
-  // create and declare variable objects
-  Object* obj = NULL;
-  if (lookAhead->tokenType == KW_VAR) {
-    eat(KW_VAR);
-
-    do {
-      eat(TK_IDENT);
-      obj = createVariableObject(currentToken->string);
-
-      eat(SB_COLON);
-      obj->varAttrs->type = compileType();
-
-      eat(SB_SEMICOLON);
-      // declareObject(obj);
-    } while (lookAhead->tokenType == TK_IDENT);
-
-    compileBlock4();
-  } 
-  else compileBlock4();
-}
-
-void compileBlock4(void) {
+  compileConstDecls();
+  compileTypeDecls();
+  compileVarDecls();
   compileSubDecls();
-  compileBlock5();
-}
 
-void compileBlock5(void) {
   eat(KW_BEGIN);
   compileStatements();
   eat(KW_END);
@@ -132,46 +133,55 @@ void compileSubDecls(void) {
 }
 
 void compileFuncDecl(void) {
-  // create and declare a function object
-  Object* obj = NULL;
+  Object* funcObj;
+  Type* returnType;
 
   eat(KW_FUNCTION);
   eat(TK_IDENT);
-  obj = createFunctionObject(currentToken->string);
-  enterBlock(obj->funcAttrs->scope);
 
+  checkFreshIdent(currentToken->string);
+  funcObj = createFunctionObject(currentToken->string);
+  declareObject(funcObj);
+
+  enterBlock(funcObj->funcAttrs->scope);
+  
   compileParams();
+
   eat(SB_COLON);
+  returnType = compileBasicType();
+  funcObj->funcAttrs->returnType = returnType;
 
-  obj->funcAttrs->returnType = compileBasicType();
   eat(SB_SEMICOLON);
-
   compileBlock();
   eat(SB_SEMICOLON);
-  exitBlock();
 
-  declareObject(obj);
+  exitBlock();
 }
 
 void compileProcDecl(void) {
-  Object* obj = NULL;
+  Object* procObj;
 
   eat(KW_PROCEDURE);
   eat(TK_IDENT);
-  obj = createProcedureObject(currentToken->string);
-  enterBlock(obj->procAttrs->scope);
+
+  checkFreshIdent(currentToken->string);
+  procObj = createProcedureObject(currentToken->string);
+  declareObject(procObj);
+
+  enterBlock(procObj->procAttrs->scope);
 
   compileParams();
+
   eat(SB_SEMICOLON);
   compileBlock();
   eat(SB_SEMICOLON);
-  exitBlock();
 
-  declareObject(obj);
+  exitBlock();
 }
 
 ConstantValue* compileUnsignedConstant(void) {
-  ConstantValue* constValue = NULL;
+  ConstantValue* constValue;
+  Object* obj;
 
   switch (lookAhead->tokenType) {
   case TK_NUMBER:
@@ -180,16 +190,10 @@ ConstantValue* compileUnsignedConstant(void) {
     break;
   case TK_IDENT:
     eat(TK_IDENT);
-    Object* obj = lookupObject(currentToken->string);
 
-    if (obj == NULL) {
-        error(ERR_UNDECLARED_CONSTANT, currentToken->lineNo, currentToken->colNo);
-    } else if (obj->kind != OBJ_CONSTANT) {
-        error(ERR_INVALID_CONSTANT, currentToken->lineNo, currentToken->colNo);
-    }
+    obj = checkDeclaredConstant(currentToken->string);
+    constValue = duplicateConstantValue(obj->constAttrs->value);
 
-    constValue = (ConstantValue*) malloc(sizeof(ConstantValue));
-    *constValue = *(obj->constAttrs->value);
     break;
   case TK_CHAR:
     eat(TK_CHAR);
@@ -199,12 +203,11 @@ ConstantValue* compileUnsignedConstant(void) {
     error(ERR_INVALID_CONSTANT, lookAhead->lineNo, lookAhead->colNo);
     break;
   }
-
   return constValue;
 }
 
 ConstantValue* compileConstant(void) {
-  ConstantValue* constValue = NULL;
+  ConstantValue* constValue;
 
   switch (lookAhead->tokenType) {
   case SB_PLUS:
@@ -228,8 +231,8 @@ ConstantValue* compileConstant(void) {
 }
 
 ConstantValue* compileConstant2(void) {
-  // create and return a constant value
-  ConstantValue* constValue = NULL;
+  ConstantValue* constValue;
+  Object* obj;
 
   switch (lookAhead->tokenType) {
   case TK_NUMBER:
@@ -238,91 +241,74 @@ ConstantValue* compileConstant2(void) {
     break;
   case TK_IDENT:
     eat(TK_IDENT);
-    Object * obj = lookupObject(currentToken->string);
-
-    if (obj == NULL)
-        error(ERR_UNDECLARED_CONSTANT, currentToken->lineNo, currentToken->colNo);
-    else if (obj->kind != OBJ_CONSTANT)
-        error(ERR_INVALID_CONSTANT, currentToken->lineNo, currentToken->colNo);
-
-    // Copy constant value from declared constant
-    constValue = duplicateConstantValue(obj->constAttrs->value);
+    obj = checkDeclaredConstant(currentToken->string);
+    if (obj->constAttrs->value->type == TP_INT)
+      constValue = duplicateConstantValue(obj->constAttrs->value);
+    else
+      error(ERR_UNDECLARED_INT_CONSTANT,currentToken->lineNo, currentToken->colNo);
     break;
   default:
     error(ERR_INVALID_CONSTANT, lookAhead->lineNo, lookAhead->colNo);
     break;
   }
-
   return constValue;
 }
 
 Type* compileType(void) {
-  // create and return a type
-  Type* type = NULL;
+  Type* type;
+  Type* elementType;
+  int arraySize;
+  Object* obj;
 
   switch (lookAhead->tokenType) {
   case KW_INTEGER: 
     eat(KW_INTEGER);
-    type = (Type*) malloc(sizeof(Type));
-    type->typeClass = TP_INT;
+    type =  makeIntType();
     break;
-  case KW_CHAR:
-    eat(KW_CHAR);
-    type = (Type*) malloc(sizeof(Type));
-    type->typeClass = TP_CHAR;
+  case KW_CHAR: 
+    eat(KW_CHAR); 
+    type = makeCharType();
     break;
   case KW_ARRAY:
-    type = (Type*) malloc(sizeof(Type));
-    type->typeClass = TP_ARRAY;
     eat(KW_ARRAY);
     eat(SB_LSEL);
     eat(TK_NUMBER);
-    type->arraySize = currentToken->value;
+
+    arraySize = currentToken->value;
+
     eat(SB_RSEL);
     eat(KW_OF);
-    type->elementType = compileType();
+    elementType = compileType();
+    type = makeArrayType(arraySize, elementType);
     break;
   case TK_IDENT:
     eat(TK_IDENT);
-    Object* obj = lookupObject(currentToken->string);
-
-    if (obj == NULL) {
-      error(ERR_UNDECLARED_TYPE, currentToken->lineNo, currentToken->colNo);
-    } else if (obj->kind != OBJ_TYPE) {
-      error(ERR_INVALID_TYPE, currentToken->lineNo, currentToken->colNo);
-    }
-
-    // Copy type from declared one
+    obj = checkDeclaredType(currentToken->string);
     type = duplicateType(obj->typeAttrs->actualType);
     break;
   default:
     error(ERR_INVALID_TYPE, lookAhead->lineNo, lookAhead->colNo);
     break;
   }
-
   return type;
 }
 
 Type* compileBasicType(void) {
- // create and return a basic type
-  Type* type = NULL;
+  Type* type;
 
   switch (lookAhead->tokenType) {
   case KW_INTEGER: 
-    eat(KW_INTEGER);
-    type = (Type*) malloc(sizeof(Type));
-    type->typeClass = TP_INT;
+    eat(KW_INTEGER); 
+    type = makeIntType();
     break;
   case KW_CHAR: 
     eat(KW_CHAR); 
-    type = (Type*) malloc(sizeof(Type));
-    type->typeClass = TP_CHAR;
+    type = makeCharType();
     break;
   default:
     error(ERR_INVALID_BASICTYPE, lookAhead->lineNo, lookAhead->colNo);
     break;
   }
-
   return type;
 }
 
@@ -339,30 +325,22 @@ void compileParams(void) {
 }
 
 void compileParam(void) {
-   // create and declare a parameter
-  Object* obj = NULL;
-  switch (lookAhead->tokenType) {
-  case TK_IDENT:
-    eat(TK_IDENT);
-    obj = createParameterObject(currentToken->string, PARAM_VALUE, symtab->currentScope->owner);
-    eat(SB_COLON);
+  Object* param;
+  Type* type;
+  enum ParamKind paramKind = PARAM_VALUE;
 
-    obj->paramAttrs->type = compileBasicType();
-    declareObject(obj);
-    break;
-  case KW_VAR:
+  if (lookAhead->tokenType == KW_VAR) {
+    paramKind = PARAM_REFERENCE;
     eat(KW_VAR);
-    eat(TK_IDENT);
-    obj = createParameterObject(currentToken->string, PARAM_REFERENCE, symtab->currentScope->owner);
-    eat(SB_COLON);
-
-    obj->paramAttrs->type = compileBasicType();
-    declareObject(obj);
-    break;
-  default:
-    error(ERR_INVALID_PARAMETER, lookAhead->lineNo, lookAhead->colNo);
-    break;
   }
+
+  eat(TK_IDENT);
+  checkFreshIdent(currentToken->string);
+  param = createParameterObject(currentToken->string, paramKind);
+  eat(SB_COLON);
+  type = compileBasicType();
+  param->paramAttrs->type = type;
+  declareObject(param);
 }
 
 void compileStatements(void) {
@@ -405,21 +383,54 @@ void compileStatement(void) {
   }
 }
 
-void compileLValue(void) {
+Type* compileLValue(void) {
+  Object* var;
+  Type* varType;
+
   eat(TK_IDENT);
-  compileIndexes();
+  
+  var = checkDeclaredLValueIdent(currentToken->string);
+
+  switch (var->kind) {
+  case OBJ_VARIABLE:
+    if (var->varAttrs->type->typeClass == TP_ARRAY) {
+      varType = compileIndexes(var->varAttrs->type);
+    }
+    else
+      varType = var->varAttrs->type;
+    break;
+  case OBJ_PARAMETER:
+    varType = var->paramAttrs->type;
+    break;
+  case OBJ_FUNCTION:
+    varType = var->funcAttrs->returnType;
+    break;
+  default: 
+    error(ERR_INVALID_LVALUE,currentToken->lineNo, currentToken->colNo);
+  }
+
+  return varType;
 }
 
 void compileAssignSt(void) {
-  compileLValue();
+  Type* varType;
+  Type* expType;
+
+  varType = compileLValue();
+  
   eat(SB_ASSIGN);
-  compileExpression();
+  expType = compileExpression();
+  checkTypeEquality(varType, expType);
 }
 
 void compileCallSt(void) {
+  Object* proc;
+
   eat(KW_CALL);
   eat(TK_IDENT);
-  compileArguments();
+
+  proc = checkDeclaredProcedure(currentToken->string);
+  compileArguments(proc->procAttrs->paramList);
 }
 
 void compileGroupSt(void) {
@@ -433,13 +444,10 @@ void compileIfSt(void) {
   compileCondition();
   eat(KW_THEN);
   compileStatement();
-  if (lookAhead->tokenType == KW_ELSE) 
-    compileElseSt();
-}
-
-void compileElseSt(void) {
-  eat(KW_ELSE);
-  compileStatement();
+  if (lookAhead->tokenType == KW_ELSE) {
+    eat(KW_ELSE);
+    compileStatement();
+  }
 }
 
 void compileWhileSt(void) {
@@ -450,31 +458,59 @@ void compileWhileSt(void) {
 }
 
 void compileForSt(void) {
+  Type* varType;
+  Type *type;
+
   eat(KW_FOR);
-  eat(TK_IDENT);
+
+  varType = compileLValue();
   eat(SB_ASSIGN);
-  compileExpression();
+  type = compileExpression();
+  checkTypeEquality(varType, type);
+
   eat(KW_TO);
-  compileExpression();
+  type = compileExpression();
+  checkTypeEquality(varType, type);
+
   eat(KW_DO);
   compileStatement();
+
 }
 
-void compileArgument(void) {
-  compileExpression();
+void compileArgument(Object* param) {
+  Type* type;
+
+  if (param->paramAttrs->kind == PARAM_VALUE) {
+    type = compileExpression();
+    checkTypeEquality(type, param->paramAttrs->type);
+  } else {
+    type = compileLValue();
+    checkTypeEquality(type, param->paramAttrs->type);
+  }
 }
 
-void compileArguments(void) {
+void compileArguments(ObjectNode* paramList) {
+  ObjectNode* node = paramList;
+
   switch (lookAhead->tokenType) {
   case SB_LPAR:
     eat(SB_LPAR);
-    compileArgument();
+    if (node == NULL)
+      error(ERR_PARAMETERS_ARGUMENTS_INCONSISTENCY, currentToken->lineNo, currentToken->colNo);
+    compileArgument(node->object);
+    node = node->next;
 
     while (lookAhead->tokenType == SB_COMMA) {
       eat(SB_COMMA);
-      compileArgument();
+      if (node == NULL)
+	error(ERR_PARAMETERS_ARGUMENTS_INCONSISTENCY, currentToken->lineNo, currentToken->colNo);
+      compileArgument(node->object);
+      node = node->next;
     }
 
+    if (node != NULL)
+      error(ERR_PARAMETERS_ARGUMENTS_INCONSISTENCY, currentToken->lineNo, currentToken->colNo);
+    
     eat(SB_RPAR);
     break;
     // Check FOLLOW set 
@@ -504,8 +540,15 @@ void compileArguments(void) {
 }
 
 void compileCondition(void) {
-  compileExpression();
-  switch (lookAhead->tokenType) {
+  Type* type1;
+  Type* type2;
+  TokenType op;
+
+  type1 = compileExpression();
+  checkBasicType(type1);
+
+  op = lookAhead->tokenType;
+  switch (op) {
   case SB_EQ:
     eat(SB_EQ);
     break;
@@ -528,41 +571,58 @@ void compileCondition(void) {
     error(ERR_INVALID_COMPARATOR, lookAhead->lineNo, lookAhead->colNo);
   }
 
-  compileExpression();
+  type2 = compileExpression();
+  checkTypeEquality(type1,type2);
 }
 
-void compileExpression(void) {
+Type* compileExpression(void) {
+  Type* type;
+  
   switch (lookAhead->tokenType) {
   case SB_PLUS:
     eat(SB_PLUS);
-    compileExpression2();
+    type = compileExpression2();
+    checkIntType(type);
     break;
   case SB_MINUS:
     eat(SB_MINUS);
-    compileExpression2();
+    type = compileExpression2();
+    checkIntType(type);
     break;
   default:
-    compileExpression2();
+    type = compileExpression2();
   }
+  return type;
 }
 
-void compileExpression2(void) {
-  compileTerm();
-  compileExpression3();
+Type* compileExpression2(void) {
+  Type* type;
+
+  type = compileTerm();
+  type = compileExpression3(type);
+
+  return type;
 }
 
 
-void compileExpression3(void) {
+Type* compileExpression3(Type* argType1) {
+  Type* argType2;
+  Type* resultType;
+
   switch (lookAhead->tokenType) {
   case SB_PLUS:
     eat(SB_PLUS);
-    compileTerm();
-    compileExpression3();
+    checkIntType(argType1);
+    argType2 = compileTerm();
+    checkIntType(argType2);
+    resultType = compileExpression3(argType1);
     break;
   case SB_MINUS:
     eat(SB_MINUS);
-    compileTerm();
-    compileExpression3();
+    checkIntType(argType1);
+    argType2 = compileTerm();
+    checkIntType(argType2);
+    resultType = compileExpression3(argType1);
     break;
     // check the FOLLOW set
   case KW_TO:
@@ -580,28 +640,40 @@ void compileExpression3(void) {
   case KW_END:
   case KW_ELSE:
   case KW_THEN:
+    resultType = argType1;
     break;
   default:
     error(ERR_INVALID_EXPRESSION, lookAhead->lineNo, lookAhead->colNo);
   }
+  return resultType;
 }
 
-void compileTerm(void) {
-  compileFactor();
-  compileTerm2();
+Type* compileTerm(void) {
+  Type* type;
+  type = compileFactor();
+  type = compileTerm2(type);
+
+  return type;
 }
 
-void compileTerm2(void) {
+Type* compileTerm2(Type* argType1) {
+  Type* argType2;
+  Type* resultType;
+
   switch (lookAhead->tokenType) {
   case SB_TIMES:
     eat(SB_TIMES);
-    compileFactor();
-    compileTerm2();
+    checkIntType(argType1);
+    argType2 = compileFactor();
+    checkIntType(argType2);
+    resultType = compileTerm2(argType1);
     break;
   case SB_SLASH:
     eat(SB_SLASH);
-    compileFactor();
-    compileTerm2();
+    checkIntType(argType1);
+    argType2 = compileFactor();
+    checkIntType(argType2);
+    resultType = compileTerm2(argType1);
     break;
     // check the FOLLOW set
   case SB_PLUS:
@@ -621,44 +693,85 @@ void compileTerm2(void) {
   case KW_END:
   case KW_ELSE:
   case KW_THEN:
+    resultType = argType1;
     break;
   default:
     error(ERR_INVALID_TERM, lookAhead->lineNo, lookAhead->colNo);
   }
+  return resultType;
 }
 
-void compileFactor(void) {
+Type* compileFactor(void) {
+  Type* type;
+  Object* obj;
+
   switch (lookAhead->tokenType) {
   case TK_NUMBER:
     eat(TK_NUMBER);
+    type = intType;
     break;
   case TK_CHAR:
     eat(TK_CHAR);
+    type = charType;
     break;
   case TK_IDENT:
     eat(TK_IDENT);
-    switch (lookAhead->tokenType) {
-    case SB_LPAR:
-      compileArguments();
+    obj = checkDeclaredIdent(currentToken->string);
+
+    switch (obj->kind) {
+    case OBJ_CONSTANT:
+      switch (obj->constAttrs->value->type) {
+      case TP_INT:
+	type = intType;
+	break;
+      case TP_CHAR:
+	type = charType;
+	break;
+      default:
+	break;
+      }
       break;
-    case SB_LSEL:
-      compileIndexes();
+    case OBJ_VARIABLE:
+      if (obj->varAttrs->type->typeClass == TP_ARRAY) {
+	type = compileIndexes(obj->varAttrs->type);
+      } else {
+	type = obj->varAttrs->type;
+      }
       break;
-    default:
+    case OBJ_PARAMETER:
+      type = obj->paramAttrs->type;
+      break;
+    case OBJ_FUNCTION:
+      compileArguments(obj->funcAttrs->paramList);
+      type = obj->funcAttrs->returnType;
+      break;
+    default: 
+      error(ERR_INVALID_FACTOR,currentToken->lineNo, currentToken->colNo);
       break;
     }
     break;
   default:
     error(ERR_INVALID_FACTOR, lookAhead->lineNo, lookAhead->colNo);
   }
+  
+  return type;
 }
 
-void compileIndexes(void) {
+Type* compileIndexes(Type* arrayType) {
+  Type* type;
+
+  
   while (lookAhead->tokenType == SB_LSEL) {
     eat(SB_LSEL);
-    compileExpression();
+    type = compileExpression();
+    checkIntType(type);
+    checkArrayType(arrayType);
+
+    arrayType = arrayType->elementType;
     eat(SB_RSEL);
   }
+  checkBasicType(arrayType);
+  return arrayType;
 }
 
 int compile(char *fileName) {
@@ -675,7 +788,6 @@ int compile(char *fileName) {
   printObject(symtab->program,0);
 
   cleanSymTab();
-
   free(currentToken);
   free(lookAhead);
   closeInputStream();
