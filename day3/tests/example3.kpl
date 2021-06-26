@@ -1,0 +1,10 @@
+Program Exp; 
+Var N : integer;
+   Procedure Add(a:integer; b:integer);
+   Begin
+      N := a+b;
+   End;
+Begin
+  N := 10;
+  Call add(N,20*10); 
+End. 

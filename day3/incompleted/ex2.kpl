@@ -1,0 +1,5 @@
+Program Example1; /* Example 1 */
+var M : ARRAY(.14.) OF integer ;
+Begin 
+
+End. /* Example 1 */

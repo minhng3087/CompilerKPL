@@ -1,0 +1,11 @@
+Program Example1; 
+Var N : integer;
+
+   Procedure Add(Var a:integer);
+   Begin
+      a := 10*a;
+   End;
+Begin
+  Call add(N); 
+  Call WRITEI(N);
+End.
