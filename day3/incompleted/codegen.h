@@ -85,7 +85,7 @@ void genGE(void);
 void genLT(void);
 void genLE(void);
 
-// x:= 2**n
+// TODO:5
 void genEXP(void); 
 
 void updateJ(Instruction* jmp, CodeAddress label);

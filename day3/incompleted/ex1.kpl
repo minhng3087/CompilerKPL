@@ -1,8 +1,7 @@
 Program Example2; (* Factorial *)
    
-Var n : Integer;
-    y : Integer;
-    m : Integer;
+Var n, y, m : Integer;
+   
 Begin
   
   m := 2;

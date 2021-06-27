@@ -1,5 +1,10 @@
 Program Example1; /* Example 1 */
 var M : ARRAY(.14.) OF integer ;
-Begin 
+    x : integer;
+procedure Toto(Var v:integer);
+Begin
 
+End;
+Begin 
+    CALL Toto(x);
 End. /* Example 1 */

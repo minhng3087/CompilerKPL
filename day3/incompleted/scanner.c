@@ -35,10 +35,11 @@ void skipComment() {
     case CHAR_TIMES:
       state = 1;
       break;
-    // case CHAR_RPAR:
-    //   if (state == 1) state = 2;
-    //   else state = 0;
-    //   break;
+    case CHAR_RPAR:
+      if (state == 1) state = 2;
+      else state = 0;
+      break;
+    // TODO:1
     case CHAR_SLASH:	
       if (state == 1) state = 2;	
       else state = 0;	
@@ -52,7 +53,7 @@ void skipComment() {
     error(ERR_END_OF_COMMENT, lineNo, colNo);
 }
 
-// Comment // 
+// TODO:1 
 
 void skipComment2() {
   while(currentChar != EOF && currentChar != '\n') {	
@@ -155,7 +156,7 @@ Token* getToken(void) {
     token = makeToken(SB_TIMES, lineNo, colNo);
     readChar();
 
-    // x:= 2**n
+    // TODO:5
     if ((currentChar != EOF) && (charCodes[currentChar] == CHAR_TIMES)) {
       readChar();
       return makeToken(SB_EXP, lineNo, colNo);
@@ -165,7 +166,7 @@ Token* getToken(void) {
     // readChar(); 
     // return token;
 
-    // Comment //
+    // TODO:1
     token = makeToken(SB_SLASH, lineNo, colNo);
     readChar(); 
 
@@ -185,6 +186,7 @@ Token* getToken(void) {
       default:
         return token;
     }
+    ///////////////////////////////////
 
 
   case CHAR_LT:
@@ -207,7 +209,7 @@ Token* getToken(void) {
     token = makeToken(SB_EQ, lineNo, colNo);
     readChar(); 
 
-    // Ky tu ==  <=> =
+    // TODO:6
 
     if(charCodes[currentChar] == CHAR_EQ) {	
       readChar();	
@@ -276,7 +278,7 @@ Token* getToken(void) {
     readChar(); 
     return token;
 
-  // Them ky tu ?, [ , ]
+  // TODO:4
 
   case CHAR_LSB:	
     token = makeToken(SB_LSEL, lineNo, colNo);	
@@ -364,13 +366,13 @@ void printToken(Token *token) {
   case SB_LSEL: printf("SB_LSEL\n"); break;
   case SB_RSEL: printf("SB_RSEL\n"); break;
 
-  // Switch case
+  // TODO:2
   case KW_SWITCH: printf("KW_SWITCH\n"); break;             
   case KW_CASE: printf("KW_CASE\n"); break;                 
   case KW_DEFAULT: printf("KW_DEFAULT\n"); break;           
   case KW_BREAK: printf("KW_BREAK\n"); break;              
 
-  // x:= 2**n
+  // TODO:5
   case SB_EXP: printf("SB_EXP\n"); break;         
 
   // Them ky tu moi ?

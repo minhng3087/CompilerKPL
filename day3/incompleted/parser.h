@@ -55,8 +55,9 @@ Type* compileFactor(void);
 Type* compileIndexes(Type* arrayType);
 
 
-// Switch case
+// TODO:2
 void compileSwitchSt(void);                            
+
 
 
 int compile(char *fileName);

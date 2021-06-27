@@ -110,7 +110,7 @@ int emitLE(CodeBlock* codeBlock);
 
 int emitBP(CodeBlock* codeBlock);
 
-// x:= 2**n
+// TODO:5
 
 int emitEXP(CodeBlock* codeBlock);      
 

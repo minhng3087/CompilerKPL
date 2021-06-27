@@ -244,7 +244,7 @@ int serialize(char* fileName) {
   return IO_SUCCESS;
 }
 
-// x:= 2**n
+// TODO:5
 
 void genEXP(void) {
   emitEXP(codeBlock);

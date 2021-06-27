@@ -33,7 +33,7 @@ struct {
   {"FOR", KW_FOR},
   {"TO", KW_TO},
 
-  // Switch case 
+  // TODO:2
   {"SWITCH", KW_SWITCH},       
   {"CASE", KW_CASE},           
   {"DEFAULT", KW_DEFAULT},     
@@ -93,19 +93,6 @@ char *tokenToString(TokenType tokenType) {
   case KW_FOR: return "keyword FOR";
   case KW_TO: return "keyword TO";
 
-  // Switch case
-
-  case KW_SWITCH: return "keyword SWITCH";  
-  case KW_CASE: return "keyword CASE";      
-  case KW_DEFAULT: return "keyword DEFAULT";
-  case KW_BREAK: return "keyword BREAK";    
-
-  // x:= 2**n
-  case SB_EXP: return "\'**\'"; 
-
-  //Them ky tu ?
-
-  case SB_QUESTION: return "\'?\'";
 
   case SB_SEMICOLON: return "\';\'";
   case SB_COLON: return "\':\'";
@@ -126,6 +113,17 @@ char *tokenToString(TokenType tokenType) {
   case SB_RPAR: return "\')\'";
   case SB_LSEL: return "\'(.\'";
   case SB_RSEL: return "\'.)\'";
+  // TODO:2
+  case KW_SWITCH: return "keyword SWITCH";  
+  case KW_CASE: return "keyword CASE";      
+  case KW_DEFAULT: return "keyword DEFAULT";
+  case KW_BREAK: return "keyword BREAK";    
+
+  // TODO:5
+  case SB_EXP: return "\'**\'"; 
+
+  // TODO:4
+  case SB_QUESTION: return "\'?\'";
 
   default: return "";
   }

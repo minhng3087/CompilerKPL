@@ -28,9 +28,9 @@ typedef enum {
   CHAR_RPAR,
   CHAR_UNKNOWN,
 
-  // Them ky tu moi ? , [ , ]
-
+  // TODO:3
   CHAR_QUESTION,CHAR_LSB, CHAR_RSB
+  
 } CharCode;
 
 #endif

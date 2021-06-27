@@ -14,7 +14,7 @@
 #include "debug.h"
 #include "codegen.h"
 
-#define MAX_CASE 10 //switch case
+#define MAX_CASE 10 //TODO:2
 
 Token *currentToken;
 Token *lookAhead;
@@ -53,6 +53,8 @@ void compileProgram(void) {
   eat(SB_PERIOD);
 
   genHL();
+  // extend
+  printf("\n");
 
   exitBlock();
 }
@@ -104,10 +106,10 @@ void compileVarDecls(void) {
   //Object* varObj;
 
   Type* varType;
-
+  Type *tmpType;
   // Var x,y,z: INTEGER
-  Object* varObj[15];
-  int varCount = 0;
+  ObjectNode *varObjNode = (ObjectNode *) malloc(sizeof(ObjectNode));
+  ObjectNode *headNode;
 
   if (lookAhead->tokenType == KW_VAR) {
     eat(KW_VAR);
@@ -124,28 +126,35 @@ void compileVarDecls(void) {
       */
 
       // Var x,y,z: INTEGER
-      do {
-        if(lookAhead->tokenType == SB_COMMA && varCount > 0) {
-          eat(SB_COMMA);
-        } else if(lookAhead->tokenType == SB_COMMA && varCount == 0) {
-          error(ERR_INVALID_SYMBOL, lookAhead->lineNo, lookAhead->colNo);
-        } 
         eat(TK_IDENT);
         checkFreshIdent(currentToken->string);
-        varObj[varCount] = createVariableObject(currentToken->string);
-        varCount++;
-      } while(lookAhead->tokenType == SB_COMMA);
-      eat(SB_COLON);
-      varType = compileType();
-      for(int i = 0; i < varCount; i++) {
-        varObj[i]->varAttrs->type = duplicateType(varType);
-        declareObject(varObj[i]);
-      }      
-      eat(SB_SEMICOLON);
-      varCount = 0;
+        varObjNode->object = createVariableObject(currentToken->string);
+        headNode = varObjNode;
+        while (lookAhead->tokenType == SB_COMMA) {
+            eat(SB_COMMA);
+            eat(TK_IDENT);
+            checkFreshIdent(currentToken->string);
+            varObjNode->next = (ObjectNode *) malloc(sizeof(ObjectNode));
+            varObjNode = varObjNode->next;
+            varObjNode->object = createVariableObject(currentToken->string);
+        }
+        varObjNode->next = NULL;
+        eat(SB_COLON);
+        varType = compileType();
+        while (headNode != NULL) {
+            tmpType = duplicateType(varType);
+            headNode->object->varAttrs->type = tmpType;
+            declareObject(headNode->object);
+            headNode = headNode->next;
+        }
+        eat(SB_SEMICOLON);
     
     } while (lookAhead->tokenType == TK_IDENT);
-  } 
+
+    free(headNode);
+    free(varObjNode);
+  }
+  
 }
 
 void compileBlock(void) {
@@ -361,17 +370,37 @@ Type* compileBasicType(void) {
   return type;
 }
 
+// void compileParams(void) {
+//   if (lookAhead->tokenType == SB_LPAR) {
+//     eat(SB_LPAR);
+//     compileParam();
+//     while (lookAhead->tokenType == SB_SEMICOLON) {
+//       eat(SB_SEMICOLON);
+//       compileParam();
+//     }
+//     eat(SB_RPAR);
+//   }
+// }
+
+//Procedure Toto();Begin...End
+
+//TODO:7
 void compileParams(void) {
-  if (lookAhead->tokenType == SB_LPAR) {
+  if(lookAhead->tokenType == SB_LPAR) {
     eat(SB_LPAR);
-    compileParam();
-    while (lookAhead->tokenType == SB_SEMICOLON) {
-      eat(SB_SEMICOLON);
+    if(lookAhead->tokenType == SB_RPAR) {
+      eat(SB_RPAR);
+    }else {
       compileParam();
+      while(lookAhead->tokenType == SB_SEMICOLON) {
+        eat(SB_SEMICOLON);
+        compileParam();
+      }
+      eat(SB_RPAR);
     }
-    eat(SB_RPAR);
   }
 }
+
 
 void compileParam(void) {
   Object* param;
@@ -421,7 +450,7 @@ void compileStatement(void) {
     compileForSt();
     break;
 
-  // Switch case
+  // TODO:2
 
   case KW_SWITCH:          
     compileSwitchSt();
@@ -496,7 +525,7 @@ void compileAssignSt(void) {
   expType = compileExpression();
   //checkTypeEquality(varType, expType);
 
-  // Lenh gan moi
+  // TODO:3
   op = lookAhead->tokenType;
   if(lookAhead->tokenType == SB_EQ || lookAhead->tokenType == SB_NEQ || lookAhead->tokenType == SB_LE || lookAhead->tokenType == SB_LT
       || lookAhead->tokenType == SB_GE || lookAhead->tokenType == SB_GT) {
@@ -564,7 +593,7 @@ void compileAssignSt(void) {
     checkTypeEquality(varType, expType);
   }
 
-
+  ////////////////////////////////////////////
 
   genST();
 }
@@ -693,8 +722,14 @@ void compileArguments(ObjectNode* paramList) {
   switch (lookAhead->tokenType) {
   case SB_LPAR:
     eat(SB_LPAR);
-    if (node == NULL)
-      error(ERR_PARAMETERS_ARGUMENTS_INCONSISTENCY, currentToken->lineNo, currentToken->colNo);
+    if (node == NULL) {
+
+      //error(ERR_PARAMETERS_ARGUMENTS_INCONSISTENCY, currentToken->lineNo, currentToken->colNo);
+
+      // TODO:7
+      eat(SB_RPAR);
+      break;
+    }
     compileArgument(node->object);
     node = node->next;
 
@@ -870,12 +905,12 @@ Type* compileExpression3(Type* argType1) {
   case KW_ELSE:
   case KW_THEN:
 
-  // Switch case
+  // TODO:2
   case KW_BREAK:     
   case KW_CASE:      
   case KW_DEFAULT:   
   case KW_BEGIN:     
-  // Them ky tu ?
+  // TODO:3
   case SB_COLON: 
   case SB_QUESTION:
 
@@ -923,7 +958,7 @@ Type* compileTerm2(Type* argType1) {
     break;
 
 
-  // x:= 2**n
+  // TODO:5
   case SB_EXP:              
     eat(SB_EXP);
     checkIntType(argType1);
@@ -953,13 +988,13 @@ Type* compileTerm2(Type* argType1) {
   case KW_ELSE:
   case KW_THEN:
 
-  // Switch case
+  // TODO:2
   case KW_BREAK:      
   case KW_CASE:       
   case KW_DEFAULT:    
   case KW_BEGIN:
 
-  // Them ky tu ?
+  // TODO:3
   case SB_COLON: 
   case SB_QUESTION:
 
@@ -1094,7 +1129,7 @@ int compile(char *fileName) {
 }
 
 
-// Switch case 
+// TODO:2 
 void compileSwitchSt(void ) {
   Instruction* fjInstruction;
   Instruction* jInstructions[MAX_CASE];
@@ -1154,3 +1189,6 @@ void compileSwitchSt(void ) {
   }
   eat(KW_END);
 }
+
+// TODO:7
+

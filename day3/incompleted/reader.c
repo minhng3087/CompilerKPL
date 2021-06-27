@@ -18,6 +18,11 @@ int readChar(void) {
     lineNo ++;
     colNo = 0;
   }
+  
+  // extend
+  if(currentChar != EOF) {
+    printf("%c", currentChar);
+  }
   return currentChar;
 }
 

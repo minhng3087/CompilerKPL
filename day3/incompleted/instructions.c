@@ -68,8 +68,7 @@ int emitLE(CodeBlock* codeBlock) { return emitCode(codeBlock, OP_LE, DC_VALUE, D
 
 int emitBP(CodeBlock* codeBlock) { return emitCode(codeBlock, OP_BP, DC_VALUE, DC_VALUE); }
 
-// x:= 2**n
-
+// TODO:5
 int emitEXP(CodeBlock* codeBlock) { return emitCode(codeBlock, OP_EXP, DC_VALUE, DC_VALUE); }     
 
 
